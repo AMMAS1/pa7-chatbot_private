@@ -7,8 +7,21 @@
 ######################################################################
 import util
 from pydantic import BaseModel, Field
-
+import re
 import numpy as np
+
+##### questions
+# - how many movies do you use for the weighed score in the item-item collaborative filtering?
+# - what to do when the user says no to the recommendations? (faq says up to u but do we reset the whole thing?)
+# - what to do when the user says they alr watched a recommended movie do i take it as a yes and rec more?
+# - what to do if the user rated a recommended movie? do i reset the reccommendations list?
+# - can the user still rate movies after the first 5 or while the bot is reccommending?
+# - what to do if the user rates a movie they already rated?
+# - what if the user rates two movies at the same time
+# - what if the user says a movie w/o quotation marks or wrong?
+
+##### assumptions
+# - if there are multiple movies with the same name, we will ask the user to specify which one they are talking about (as faq)
 
 
 # noinspection PyMethodMayBeStatic
@@ -33,7 +46,9 @@ class Chatbot:
         ########################################################################
 
         # Binarize the movie ratings before storing the binarized matrix.
-        self.ratings = ratings
+        self.ratings = self.binarize(ratings)
+        self.user_ratings = np.zeros(self.ratings.shape[0])
+        self.recs = []
         ########################################################################
         #                             END OF YOUR CODE                         #
         ########################################################################
@@ -104,7 +119,108 @@ class Chatbot:
         if self.llm_enabled:
             response = "I processed {} in LLM Programming mode!!".format(line)
         else:
-            response = "I processed {} in Starter (GUS) mode!!".format(line)
+            response = ""
+            if len(self.recs) == 0: #  we still below 5 ratings
+                # extract the title
+                potential_titles = self.extract_titles(self.preprocess(line))
+                if len(potential_titles) == 0:
+                    return "I'm sorry, I couldn't find any movie titles in your input"
+                elif len(potential_titles) > 1:
+                    return "I'm sorry, I found multiple movie titles in your input"
+                title = potential_titles[0]
+
+                # find the movie by title
+                movie_indices = self.find_movies_by_title(title)
+                if len(movie_indices) == 0:
+                    return "I'm sorry, I couldn't find any movies with the title {}".format(title)
+                elif len(movie_indices) > 1:
+                    return "I found multiple movies with the title {}, here are the first {}: {}\n Which one are you talking about?".format(title, min(5, len(movie_indices)), ", ".join([self.titles[i][0] for i in movie_indices[:5]]))
+                movie_index = movie_indices[0]
+
+                # extract sentiment
+                sentiment = self.extract_sentiment(self.preprocess(line))
+                if sentiment == 1:
+                    self.user_ratings[movie_index] = 1
+                    positive_responses = [
+                        "You liked {}!".format(self.titles[movie_index][0]),
+                        "So you liked {}!".format(self.titles[movie_index][0]),
+                        "You enjoyed {}!".format(self.titles[movie_index][0]),
+                        "Ah, I am glad you found {} good!".format(self.titles[movie_index][0]),
+                        "You loved {}!".format(self.titles[movie_index][0])
+                    ]
+                    response = np.random.choice(positive_responses)
+                elif sentiment == 0:
+                    neutral_responses = [
+                        "You felt neutral about {}.".format(self.titles[movie_index][0]),
+                        "{} was just okay for you.".format(self.titles[movie_index][0]),
+                        "It seems {} didn’t leave a strong impression.".format(self.titles[movie_index][0]),
+                        "You're indifferent about {}.".format(self.titles[movie_index][0]),
+                        "{} was neither good nor bad for you.".format(self.titles[movie_index][0])
+                    ]
+                    response = np.random.choice(neutral_responses)
+
+                else:
+                    negative_responses = [
+                        "You didn’t like {}!".format(self.titles[movie_index][0]),
+                        "So {} wasn’t your favorite.".format(self.titles[movie_index][0]),
+                        "Oh, you disliked {}!".format(self.titles[movie_index][0]),
+                        "Not a fan of {}?".format(self.titles[movie_index][0]),
+                        "You didn’t enjoy {}.".format(self.titles[movie_index][0])
+                    ]
+                    self.user_ratings[movie_index] = -1
+                    response = np.random.choice(negative_responses)
+
+            if np.count_nonzero(self.user_ratings) < 5: # we still need more ratings ask user for more
+                questions = [
+                    "Tell me more movies you liked!",
+                    "What other movies can you tell me?",
+                    "What other movies have you watched?",
+                    "Any other movies you've seen recently?",
+                    "What other movies do you have thoughts on?",
+                    "What else have you watched?",
+                    "Do you have any other favorites or least favorites?",
+                    "Let’s talk about another movie!"
+                ]
+                response += " " + np.random.choice(questions)
+            else:
+                if len(self.recs) > 0: # if recs is already filled then last msg was asking if the user wants more recs
+                    yesses = ["yes", "yeah", "sure", "ok", "okay", "yep", "y", "yea", "yup", "of course", "please", "more", "another"]
+                    nos = ["no", "nope", "nah", "n", "not really", "not", "not now", "not yet", "not today", "not this time", "no thanks", "no thank you", "no more","im good", "i'm good"]
+                    # remove punctuation and lowercase the line
+                    line_clean = re.sub(r'[^\w\s]', '', line).lower()
+                    if any(yes in line_clean for yes in yesses):
+                        # recommend more
+                        pass  
+                    elif any(no in line_clean for no in nos):
+                        return self.goodbye()
+                        # finish
+                    else: # keep asking till the user responds
+                        return "I'm sorry, I didn't understand your response. Do you want more recommendations?"
+                else: # if recs is empty and we have 5 ratings that means we just got the fifth movie.
+                    self.recs = self.recommend(self.user_ratings, self.ratings)[::-1] # we reverse the list to get the highest rated movies first when popping
+                
+                # respond with another recommendation if user responded with yes or it's first time recommending
+                responses = [
+                    "Given what you said, I have some recommendations for you: ",
+                    "Based on your input, I have something for you to watch: ",
+                    "Let me reccomend this to you then: ",
+                    "Based on out conversation, I think you would like: ",
+                    ]
+
+                response += " " + np.random.choice(responses) + self.titles[self.recs.pop()][0]
+
+                follow_ups = [
+                    "Do you want more recommendations?",
+                    "Would you like more recommendations?",
+                    "Do you want another recommendation?",
+                    "Want another recommendation?",
+                ]
+
+                response += " " + np.random.choice(follow_ups)
+
+                response = response.strip()
+
+
 
         ########################################################################
         #                          END OF YOUR CODE                            #
@@ -163,7 +279,8 @@ class Chatbot:
         pre-processed with preprocess()
         :returns: list of movie titles that are potentially in the text
         """
-        return []
+        # all the substrings between the quotation marks
+        return [title for title in re.findall(r'"([^"]*)"', preprocessed_input)]
 
     def find_movies_by_title(self, title):
         """ Given a movie title, return a list of indices of matching movies.
@@ -183,7 +300,30 @@ class Chatbot:
         :param title: a string containing a movie title
         :returns: a list of indices of matching movies
         """
-        return []
+        # remove The or an or a from the beginning of the title but only if it is the first word
+        results = []
+        for i in range(len(self.titles)):
+            if re.match(r"^.*?, (The|A|An) (\(\d+\))", self.titles[i][0]):
+                movietitle, article, year = re.match(r'^(.+?), (The|A|An) (\(\d+\))$', self.titles[i][0]).groups()
+            else:
+                article, movietitle, year = re.match(r'^(The|A|An )?(.+?) ?(\(\d+\))?$', self.titles[i][0]).groups()
+            pattern = rf"^({article if article else ''} )?({re.escape(movietitle)})( {re.escape(year) if year else ''})?$"
+            if re.match(pattern, title):
+                results.append(i)
+        return results
+
+    def stem(self, word):
+        stems = [word]
+        if word.endswith("ing"):
+            stems.append(word[:-3])
+        if word.endswith("ed"):
+            stems.append(word[:-2]) # enjoyed -> enjoy
+            stems.append(word[:-1]) # liked -> like
+        if word.endswith("ly"):
+            stems.append(word[:-2]) # happily -> happy
+        if word.endswith("s"): # plural form
+            stems.append(word[:-1]) # likes -> like
+        return stems
 
     def extract_sentiment(self, preprocessed_input):
         """Extract a sentiment rating from a line of pre-processed text.
@@ -201,7 +341,23 @@ class Chatbot:
         pre-processed with preprocess()
         :returns: a numerical value for the sentiment of the text
         """
-        return 0
+        negation_words = ["not", "no", "never", "neither", "nor", "none", "nowhere", "nothing"]
+        score = 0
+        negation_flag = 1
+        # remove between quotation marks and replace them with a space
+        preprocessed_input = re.sub(r'"([^"]*)"', " ", preprocessed_input)
+        for word in preprocessed_input.split():
+            # stemming the word
+            word = word.lower()
+            # check if a word is negation word
+            if word in negation_words or word.endswith("n't"):
+                negation_flag = -negation_flag
+            else:
+                for stem in self.stem(word):
+                    if stem in self.sentiment:
+                        score += negation_flag * {"neg": -1, "pos": 1}[self.sentiment[stem]]
+                        break
+        return np.clip(score, -1, 1)
 
     ############################################################################
     # 3. Movie Recommendation helper functions                                 #
@@ -235,6 +391,8 @@ class Chatbot:
         # The starter code returns a new matrix shaped like ratings but full of
         # zeros.
         binarized_ratings = np.zeros_like(ratings)
+        binarized_ratings[ratings > threshold] = 1
+        binarized_ratings[(ratings > 0) & (ratings <= threshold)] = -1
 
         ########################################################################
         #                        END OF YOUR CODE                              #
@@ -254,7 +412,7 @@ class Chatbot:
         ########################################################################
         # TODO: Compute cosine similarity between the two vectors.             #
         ########################################################################
-        similarity = 0
+        similarity = np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v) + 1e-9) # to avoid division by zero
         ########################################################################
         #                          END OF YOUR CODE                            #
         ########################################################################
@@ -298,7 +456,25 @@ class Chatbot:
 
         # Populate this list with k movie indices to recommend to the user.
         recommendations = []
+        unrated_indices = np.where(user_ratings == 0)[0]
+        # user_rated_matrix is a smaller matrix with only the movies that the user has rated
+        user_rated_matrix = ratings_matrix[user_ratings != 0, :] # rated movies x users
+        user_unrated_matrix = ratings_matrix[user_ratings == 0, :] # unrated movies x users
 
+        # note that this normalization is only for cosine similarity we are not normalizing the scores
+        norms1 = np.linalg.norm(user_rated_matrix, axis=1, keepdims=True)
+        norms2 = np.linalg.norm(user_unrated_matrix, axis=1, keepdims=True)
+        similarity_matrix = np.dot(user_rated_matrix, user_unrated_matrix.T) / (np.dot(norms1, norms2.T)+1e-9) # (rated movies x users) x (users x unrated movies) = (rated movies x unrated movies)
+        
+        # now we have the similarity matrix, we can use it to fill the missing movies ratings with weighted average
+        interpolated_ratings = np.dot(user_ratings[user_ratings != 0], similarity_matrix) # (1 x rated movies) x (rated movies x unrated movies) = (1 x unrated movies)
+        
+        # sort the interpolated ratings and get the top k
+        top_k = np.argsort(interpolated_ratings)[::-1][:k]
+        
+        # map the indices back to the original indices
+        recommendations = list(unrated_indices[top_k])
+        
         ########################################################################
         #                        END OF YOUR CODE                              #
         ########################################################################
