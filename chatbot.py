@@ -11,7 +11,14 @@ import re
 import numpy as np
 import json
 
+##### todo
+# - edit the system prompt for llm prompting mode
+# - make sure system prompt works for llm_programming mode
+
 ##### questions
+# - what exactly is the persona? can it just be movie bot?
+# - repetition in llm prompting mode?
+# - what's the diff btn llm prompting and llm programming mode?
 # - in programming mode? don't we just use the same prompt from part 2 for the bot or what's the diff?
 # - what happens when the bot llm use to temperature at some point during grading?
 # - how many movies do you use for the weighed score in the item-item collaborative filtering?
@@ -39,6 +46,7 @@ class Chatbot:
         self.llm_enabled = llm_enabled
         # this is for llm programming to swtich from json to normal mode after failing n times
         self.trials = 5
+        self.messages = []
 
         # This matrix has the following shape: num_movies x num_users
         # The values stored in each row i and column j is the rating for
@@ -122,7 +130,27 @@ class Chatbot:
         # code in a modular fashion to make it easier to improve and debug.    #
         ########################################################################
         if self.llm_enabled:
-            response = "I processed {} in LLM Programming mode!!".format(line)
+            client = util.load_together_client()
+            chat_completion = client.chat.completions.create(
+                messages=[{
+                    "role": "system",
+                    "content": self.llm_system_prompt(),
+                }] + self.messages + [{
+                    "role": "user",
+                    "content": line,
+                }],
+                model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+                max_tokens=256,
+            )
+            self.messages.append({
+                "role": "user",
+                "content": line,
+            })
+            self.messages.append({
+                "role": "assistant",
+                "content": chat_completion.choices[0].message.content,
+            })
+            return chat_completion.choices[0].message.content
         else:
             response = ""
             if len(self.recs) == 0: #  we still below 5 ratings
