@@ -16,7 +16,7 @@ import json
 # - make sure system prompt works for llm_programming mode
 
 ##### questions
-# - what are user testing and reflection?
+# - does passing the autograder for python mean we're done or still more grading? im failing one of the cases on sanity checks but ace gradescope
 # - what exactly is the persona? can it just be movie bot?
 # - repetition in llm prompting mode?
 # - what's the diff btn llm prompting and llm programming mode?
