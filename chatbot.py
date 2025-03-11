@@ -12,6 +12,8 @@ import numpy as np
 import json
 
 ##### questions
+# - in programming mode? don't we just use the same prompt from part 2 for the bot or what's the diff?
+# - what happens when the bot llm use to temperature at some point during grading?
 # - how many movies do you use for the weighed score in the item-item collaborative filtering?
 # - what to do when the user says no to the recommendations? (faq says up to u but do we reset the whole thing?)
 # - what to do when the user says they alr watched a recommended movie do i take it as a yes and rec more?
