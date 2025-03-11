@@ -16,6 +16,7 @@ import json
 # - make sure system prompt works for llm_programming mode
 
 ##### questions
+# - what are user testing and reflection?
 # - what exactly is the persona? can it just be movie bot?
 # - repetition in llm prompting mode?
 # - what's the diff btn llm prompting and llm programming mode?
@@ -29,6 +30,7 @@ import json
 # - what to do if the user rates a movie they already rated?
 # - what if the user rates two movies at the same time
 # - what if the user says a movie w/o quotation marks or wrong?
+# - is there anything else we need to do?
 
 ##### assumptions
 # - if there are multiple movies with the same name, we will ask the user to specify which one they are talking about (as faq)
