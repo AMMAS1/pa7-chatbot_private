@@ -9,6 +9,7 @@ import util
 from pydantic import BaseModel, Field
 import re
 import numpy as np
+import json
 
 ##### questions
 # - how many movies do you use for the weighed score in the item-item collaborative filtering?
@@ -34,6 +35,8 @@ class Chatbot:
         self.name = 'moviebot'
 
         self.llm_enabled = llm_enabled
+        # this is for llm programming to swtich from json to normal mode after failing n times
+        self.trials = 5
 
         # This matrix has the following shape: num_movies x num_users
         # The values stored in each row i and column j is the rating for
@@ -300,14 +303,34 @@ class Chatbot:
         :param title: a string containing a movie title
         :returns: a list of indices of matching movies
         """
-        # remove The or an or a from the beginning of the title but only if it is the first word
+        
+        if self.llm_enabled:
+            class movietitle(BaseModel):
+                English: str = Field(description="The movie title in English")
+            for i in range(self.trials):
+                try:
+                    response = self.json_llm_call("Translate movie title from German, Spanish, and French, Danish, and Italian to ENGLISH. Only Respond with the name in english in json nothing else",
+                            title, movietitle.model_json_schema())
+                    # check if the response is a valid emotion json object
+                    if not response \
+                    or not (response := json.loads(response)) \
+                    or not isinstance(response, dict) \
+                    or "English" not in response \
+                    or not isinstance(response["English"], str):
+                        raise ValueError("Invalid emotion response")
+                    title = response["English"]
+                    break
+                except:
+                    pass
+            
         results = []
-        for i in range(len(self.titles)):
+        for i in range(len(self.titles)):    
+            # remove The or an or a from the beginning of the title but only if it is the first word
             if re.match(r"^.*?, (The|A|An) (\(\d+\))", self.titles[i][0]):
-                movietitle, article, year = re.match(r'^(.+?), (The|A|An) (\(\d+\))$', self.titles[i][0]).groups()
+                movietitle, article, year = re.match(r'^(.+?), (The |A |An )(\(\d+\))$', self.titles[i][0]).groups()
             else:
-                article, movietitle, year = re.match(r'^(The|A|An )?(.+?) ?(\(\d+\))?$', self.titles[i][0]).groups()
-            pattern = rf"^({article if article else ''} )?({re.escape(movietitle)})( {re.escape(year) if year else ''})?$"
+                article, movietitle, year = re.match(r'^(The |A |An )?(.+?) ?(\(\d+\))?$', self.titles[i][0]).groups()
+            pattern = rf"^({article if article else ''})?({re.escape(movietitle)})( {re.escape(year) if year else ''})?$"
             if re.match(pattern, title):
                 results.append(i)
         return results
@@ -554,6 +577,27 @@ class Chatbot:
     ############################################################################
     # 5. PART 3: LLM Programming Mode (also need to modify functions above!)   #
     ############################################################################
+    
+    def json_llm_call(self, system_prompt, message, json_class_schema, model="mistralai/Mixtral-8x7B-Instruct-v0.1", max_tokens=256):
+        client = util.load_together_client()
+        chat_completion = client.chat.completions.create(
+            messages=[{
+                "role": "system",
+                "content": system_prompt,
+            }, {
+                "role": "user",
+                "content": message,
+            }],
+            model=model,
+            max_tokens=max_tokens,
+            response_format = {
+                "type": "json_object",
+                "schema": json_class_schema
+            },
+            temperature=0.0,
+        )
+
+        return chat_completion.choices[0].message.content
 
     def extract_emotion(self, preprocessed_input):
         """LLM PROGRAMMING MODE: Extract an emotion from a line of pre-processed text.
@@ -588,7 +632,23 @@ class Chatbot:
         :returns: a list of emotions in the text or an empty list if no emotions found.
         Possible emotions are: "Anger", "Disgust", "Fear", "Happiness", "Sadness", "Surprise"
         """
-        return []
+        class Emotion(BaseModel):
+            emotions: list[str] = Field(description="List of emotions in the text")
+        system_prompt = "You are an emotionally intelligent movie chatbot. You must identify the emotions in the user's input. Return ALL the applicable emotions in the input even slightly. The choices you have are: Anger, Disgust, Fear, Happiness, Sadness, Surprise. You must return the emotions in a list. If there are no emotions in the text, return an empty list. Return in json format."
+        for i in range(self.trials):
+
+                emotions = self.json_llm_call(system_prompt, preprocessed_input, Emotion.model_json_schema())
+                # check if the response is a valid emotion json object
+                if not emotions \
+                or not (emotions := json.loads(emotions)) \
+                or not isinstance(emotions, dict) \
+                or "emotions" not in emotions \
+                or not isinstance(emotions["emotions"], list) \
+                or not all(isinstance(emotion, str) for emotion in emotions["emotions"]):
+                    raise ValueError("Invalid emotion response")
+                return emotions["emotions"]
+
+        return [util.simple_llm_call(system_prompt, preprocessed_input).strip()]
 
     ############################################################################
     # 6. Debug info                                                            #
@@ -629,3 +689,6 @@ if __name__ == '__main__':
     print('To run your chatbot in an interactive loop from the command line, '
           'run:')
     print('    python3 repl.py')
+    chatbot = Chatbot(True)
+    chatbot.find_movies_by_title("Tote Männer Tragen Kein Plaid")
+    
