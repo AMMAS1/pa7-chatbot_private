@@ -16,7 +16,7 @@ FEATURE - [LLM PROGRAMMING] Extracting Emotion from User Input: YES
 FEATURE - [LLM PROGRAMMING] Responding to Arbitrary User Input: YES
 FEATURE - [LLM PROGRAMMING] Responding Appropriately to User Emotion: YES
 FEATURE - [LLM PROGRAMMING] Chatbot Theme/Persona: NO
-Did not implement any of the above features: YES
+Did not implement any of the above features: NO
 
 #########################################################################################
 # Team Contributions                                                                    #
