@@ -11,31 +11,6 @@ import re
 import numpy as np
 import json
 
-##### todo
-# - edit the system prompt for llm prompting mode
-# - make sure system prompt works for llm_programming mode
-
-##### questions
-# - does passing the autograder for python mean we're done or still more grading? im failing one of the cases on sanity checks but ace gradescope
-# - what exactly is the persona? can it just be movie bot?
-# - repetition in llm prompting mode?
-# - what's the diff btn llm prompting and llm programming mode? (do movies have to be btn "" in prog mode?) (do we have to use the functions like extract_titles etc?)
-# - in programming mode? don't we just use the same prompt from part 2 for the bot or what's the diff?
-# - what happens when the bot llm use to temperature at some point during grading?
-### - how many movies do you use for the weighed score in the item-item collaborative filtering?
-# - what to do when the user says no to the recommendations? (faq says up to u but do we reset the whole thing?)
-# - what to do when the user says they alr watched a recommended movie do i take it as a yes and rec more?
-# - what to do if the user rated a recommended movie? do i reset the reccommendations list?
-# - can the user still rate movies after the first 5 or while the bot is reccommending?
-# - what to do if the user rates a movie they already rated?
-# - what if the user rates two movies at the same time
-# - what if the user says a movie w/o quotation marks or wrong?
-# - is there anything else we need to do?
-
-##### assumptions
-# - if there are multiple movies with the same name, we will ask the user to specify which one they are talking about (as faq)
-
-
 # noinspection PyMethodMayBeStatic
 class Chatbot:
     """Simple class to implement the chatbot for PA 7."""
@@ -43,7 +18,7 @@ class Chatbot:
     def __init__(self, llm_enabled=False):
         # The chatbot's default name is `moviebot`.
         # TODO: Give your chatbot a new name.
-        self.name = 'moviebot'
+        self.name = 'THE moviebot'
 
         self.llm_enabled = llm_enabled
         # this is for llm programming to swtich from json to normal mode after failing n times
@@ -78,7 +53,7 @@ class Chatbot:
         # TODO: Write a short greeting message                                 #
         ########################################################################
 
-        greeting_message = "How can I help you?"
+        greeting_message = "Hello and Welcome to THE moviebot!! How can I help you?"
 
         ########################################################################
         #                             END OF YOUR CODE                         #
@@ -93,7 +68,7 @@ class Chatbot:
         # TODO: Write a short farewell message                                 #
         ########################################################################
 
-        goodbye_message = "Have a nice day!"
+        goodbye_message = "Thanks for using THE moviebot! Have a nice day!"
 
         ########################################################################
         #                          END OF YOUR CODE                            #
@@ -708,7 +683,7 @@ class Chatbot:
         instructions.
         Remember: in the GUS mode, movie names will come in quotation marks
         and expressions of sentiment will be simple!
-        TODO: Write here the description for your own chatbot!
+        This chatbot can help you find movies you like and provide information about movies. Rate 5 movies and see what it recommends!
         """
 
 
