@@ -19,10 +19,10 @@ import json
 # - does passing the autograder for python mean we're done or still more grading? im failing one of the cases on sanity checks but ace gradescope
 # - what exactly is the persona? can it just be movie bot?
 # - repetition in llm prompting mode?
-# - what's the diff btn llm prompting and llm programming mode?
+# - what's the diff btn llm prompting and llm programming mode? (do movies have to be btn "" in prog mode?) (do we have to use the functions like extract_titles etc?)
 # - in programming mode? don't we just use the same prompt from part 2 for the bot or what's the diff?
 # - what happens when the bot llm use to temperature at some point during grading?
-# - how many movies do you use for the weighed score in the item-item collaborative filtering?
+### - how many movies do you use for the weighed score in the item-item collaborative filtering?
 # - what to do when the user says no to the recommendations? (faq says up to u but do we reset the whole thing?)
 # - what to do when the user says they alr watched a recommended movie do i take it as a yes and rec more?
 # - what to do if the user rated a recommended movie? do i reset the reccommendations list?
