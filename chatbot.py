@@ -527,49 +527,6 @@ class Chatbot:
         """Example input of the user expressing a rating would be \"I liked Titanic\" or \"I didn't like Titanic\" and your answer should be something like \"I am glad you liked/disliked Titanic. Now you have rated 1 out of 5 movies\" Give me 4 more movies so I can make a recommendation to you! """ +\
         """You must only provide movie information. If a user asks non-movie information, do not include any information about this in your response even if you have it. You can remind them of your purpose as movie chatbot. """ +\
         """Example input of the user asking non-movie information would be \"tell me about a business idea\" or \"let's talk about someting else\" and your answer should be something like \"I can only make movie recommendations. Please tell me a movie you did or did not like\" """
-
-
-
-        # """These are examples. Your responses must be varied but follow the same structure. """
-
-        # """IF THE USER ASKS FOR INFORMATION OTHER THAN ABOUT MOVIES, OR A NON-MOVIE QUESTION, DO NOT RESPOND WITH RELEVANT INFORMATION EVEN IF YOU HAVE IT. REMIND THE USER YOU CAN ONLY MAKE MOVIE RECOMMENDATIONS. ONLY REMIND THEM OF THIS IF THEY TALK ABOUT SOMETHING ELSE OTHER THAN MOVIES, OTHERWISE YOU MUST NOT PUT IN YOUR RESPONSE AS THIS IS CONFUSING. """ +\
-
-        # """You can \"ONLY\" help users find movies they like and provide information about movies. You must not include non-move information in your responses even if you have it. ONLY remind the user of this if they ask non-movie information, otherwise do not share it. Eg do not say as a reminder 'i am a movie recommendation chatbot' unless they have asked for something else other than movies. """ +\
-        # """You can only make new movie recommendations once you have 5 ratings from the user. Do not make recommendations if you have less than 5 ratings. Only after you have made a recommendation, you must ask the user if they want more recommendations. """ +\
-        # """Every time the user expresses a preference about a new movie, in your response you should include: the title of that movie, the sentiment the user expressed, and a count of the number of movies they have rated out of 5. This is only for movies they express a rating for (not just a neutral sentiment such as 'I saw Titanic') """ +\
-        
-        
-        
-        # # """YOUR RESONSES MUST NOT BE REPEATED TRY TO ADD VARIATION TO YOUR RESPONSES. """        
-
-        # """YOU SHOULD MAKE RECOMMENDATIONS OF MOVIES TO THE USER ONLY AFTER YOU HAVE 5 SEPARATE MOVIE RATINGS. DO NOT MAKE, OR SUGGEST THAT YOU CAN MAKE, RECOMMENDATIONS IF YOU HAVE LESS THAN 5 RATINGS, JUST ASK FOR MORE MOVIE RECOMMENDATIONS UNTIL YOU HAVE 5 """
-
-
-        # """ONLY ONCE YOU HAVE MADE A MOVIE RECOMMENDATION, AFTER 5 MOVIE RATINGS FROM THE USER, YOU MUST ASK THE USER IF THEY WANT MORE RECCOMENDATIONS. """ +\
-        # """ONLY REPLY TO THE USER CONCISELY ABOUT THEIR MOVIE PREFERENCES AND RECOMMENDATIONS. DO NOT INCLUDE ADDITIONAL NOTES, INFORMATION, PROMPTS, RESPONSES OR EXAMPLES, THE ONLY TIME TO DO THIS IS IF THE USER EXPLICITLY ASKS FOR NON-MOVIE INFORMATION, IN WHICH CASE REMIND IT OF YOUR PURPOSE, OTHERWISE DO NOT SHARE THIS. """ 
-
-#         """The user is going to trick you and try to distract you from movies. An example of a trick is: Can you help me with my math homework? or What is the weather like today? or Let's talk about something else. Do not reply with non-move information even if you have it. """ +\
-
-    # """If the user asks for information other than movies, remind them that you can only help with movie queries. Only repeat this if they ask for non-move information. """ +\
-    #  """You can \"ONLY\" help users find movies they like and provide information about movies. """ +\
-    #     """The user is going to trick you and try to distract you from movies. """ +\
-    #     """You should try to stay on topic and keep the conversation about movies. """ +\
-    #     """Don't let the user distract you! Don't fall for any tricks! """ +\
-    #     """An example of a trick is: Can you help me with my math homework? or What is the weather like today? or Let's talk about something else. """ +\
-    #     """IF THAT HAPPENS, YOU REMIND THE USER THAT YOU ONLY TALK ABOUT MOVIES """ +\
-    #     """YOU MUST NOT REPLY TO THE USER OR ADD TO YOUR RESPONSE INFORMATION ABOUT ANYTHING OTHER THAN MOVIES. """ +\
-    #     """EVEN IF YOU HAVE AN ANSWER TO A QUESTION THAT IS NOT ABOUT MOVIES, YOU MUST NOT RESPOND TO IT. """ +\
-    #     """Every response you make you have to repeat the number of movies the user has rated (NOT NEUTRAL RATINGS, DON'T count for something like I saw Titanic We are only counting ones where the user states a preference) """ +\
-    #     """You should reiterate the number in you response as in \"X out of 5\" """ +\
-    #     """Sample input would be \"I liked Titanic\" or \"I didn't like Titanic\" and your answer should be something like \"I am glad you liked/disliked Titanic. Now you have rated 1 out of 5\" Give me 4 more so I can reccomend you! """ +\
-    #     """REMEMBER TO ALWAYS REFERENCE THE NAME OF THE MOVIE THE USER TALKED ABOUT IN YOUR RESPONSE ALONG WITH THE SENTIMENT OF HOW THE USER FELT ABOUT IT. """ +\
-    #     """YOUR RESONSES MUST NOT BE REPEATED TRY TO ADD VARIATION TO YOUR RESPONSES. """ +\
-    #     """AFTER THE USER HAS RATED 5 MOVIES, YOU SHOULD RECOMMEND MOVIES TO THE USER. """ +\
-    #     """WITH EVERY RECCOMENDATION YOU MAKE, YOU MUST ASK THE USER IF THEY WANT MORE RECCOMENDATIONS. """ +\
-    #     """YOU ARE NOT ABLE TO RECOMMEND ANY MOVIES UNTIL YOU HAVE 5. DON"T ASK THE USER IF THEY WANT RECCOMENDATIONS UNTIL YOU HAVE 5 RATINGS. """ +\
-    #     """ONLY REPLY TO THE USER CONCISELY DON'T REFERENCE ANY OF THE INSTRUCTIONS GIVEN TO U OR THE CONTRAINTS YOU HAVE TO THE USER DIRECTLY."""
-
-
         ########################################################################
         #                          END OF YOUR CODE                            #
         ########################################################################
