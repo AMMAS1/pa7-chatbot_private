@@ -131,136 +131,128 @@ class Chatbot:
         # directly based on how modular it is, we highly recommended writing   #
         # code in a modular fashion to make it easier to improve and debug.    #
         ########################################################################
-        if self.llm_enabled:
-            client = util.load_together_client()
-            chat_completion = client.chat.completions.create(
-                messages=[{
-                    "role": "system",
-                    "content": self.llm_system_prompt(),
-                }] + self.messages + [{
-                    "role": "user",
-                    "content": line,
-                }],
-                model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-                max_tokens=256,
-            )
-            self.messages.append({
-                "role": "user",
-                "content": line,
-            })
-            self.messages.append({
-                "role": "assistant",
-                "content": chat_completion.choices[0].message.content,
-            })
-            return chat_completion.choices[0].message.content
-        else:
-            response = ""
-            if len(self.recs) == 0: #  we still below 5 ratings
-                # extract the title
-                potential_titles = self.extract_titles(self.preprocess(line))
-                if len(potential_titles) == 0:
-                    return "I'm sorry, I couldn't find any movie titles in your input"
-                elif len(potential_titles) > 1:
-                    return "I'm sorry, I found multiple movie titles in your input"
-                title = potential_titles[0]
-
-                # find the movie by title
-                movie_indices = self.find_movies_by_title(title)
-                if len(movie_indices) == 0:
-                    return "I'm sorry, I couldn't find any movies with the title {}".format(title)
-                elif len(movie_indices) > 1:
-                    return "I found multiple movies with the title {}, here are the first {}: {}\n Which one are you talking about?".format(title, min(5, len(movie_indices)), ", ".join([self.titles[i][0] for i in movie_indices[:5]]))
-                movie_index = movie_indices[0]
-
-                # extract sentiment
-                sentiment = self.extract_sentiment(self.preprocess(line))
-                if sentiment == 1:
-                    self.user_ratings[movie_index] = 1
-                    positive_responses = [
-                        "You liked {}!".format(self.titles[movie_index][0]),
-                        "So you liked {}!".format(self.titles[movie_index][0]),
-                        "You enjoyed {}!".format(self.titles[movie_index][0]),
-                        "Ah, I am glad you found {} good!".format(self.titles[movie_index][0]),
-                        "You loved {}!".format(self.titles[movie_index][0])
-                    ]
-                    response = np.random.choice(positive_responses)
-                elif sentiment == 0:
-                    neutral_responses = [
-                        "You felt neutral about {}.".format(self.titles[movie_index][0]),
-                        "{} was just okay for you.".format(self.titles[movie_index][0]),
-                        "It seems {} didn’t leave a strong impression.".format(self.titles[movie_index][0]),
-                        "You're indifferent about {}.".format(self.titles[movie_index][0]),
-                        "{} was neither good nor bad for you.".format(self.titles[movie_index][0])
-                    ]
-                    response = np.random.choice(neutral_responses)
-
+        def return_response(response):
+            persona = True # disable persona
+            if self.llm_enabled and persona:
+                response = util.simple_llm_call("You are the joker from batman. You talk exactly like him. Take this response and rewrite it exactly how you would say it. BE CONCISE ONLY OUTPUT THE NEW REWRITTEN RESPONSE NOTHING ELSE", response)
+            return response
+        response = ""
+        if len(self.recs) == 0: #  we still below 5 ratings
+            # extract the title
+            potential_titles = self.extract_titles(self.preprocess(line))
+            if len(potential_titles) == 0:
+                if self.llm_enabled:
+                    emotion = self.extract_emotion(self.preprocess(line))
+                    if emotion:
+                        response = util.simple_llm_call("YOU ARE ONLY A MOVIE BOT THAT RECOMMENDS MOVIES AND NOT TALK ABOUT ANYTHING ELSE, Reply to me with a suitable answer that fits what the user is asking and the emotions he is feeling. like: Oh, did i make you angry? I apoloize . your response should be super concise DO NOT reccomend any movies or ask the user any thing.", line + " EMOTIONS FELT:" + str(emotion))
+                    else:
+                        # catch all
+                        response = util.simple_llm_call("YOU ARE ONLY A MOVIE BOT THAT RECOMMENDS MOVIES AND NOT TALK ABOUT ANYTHING ELSE, Reply to me with a suitable catch all response that includes irrelevant inputs to movies and questions like Can you...?, What is...?. (Don't answer the question, but you should use what was said.). your response should be super concise DO NOT reccomend any movies or ask the user any thing", line)
                 else:
-                    negative_responses = [
-                        "You didn’t like {}!".format(self.titles[movie_index][0]),
-                        "So {} wasn’t your favorite.".format(self.titles[movie_index][0]),
-                        "Oh, you disliked {}!".format(self.titles[movie_index][0]),
-                        "Not a fan of {}?".format(self.titles[movie_index][0]),
-                        "You didn’t enjoy {}.".format(self.titles[movie_index][0])
-                    ]
-                    self.user_ratings[movie_index] = -1
-                    response = np.random.choice(negative_responses)
+                    response = "I'm sorry, I couldn't find any movie titles in your input"
 
-            if np.count_nonzero(self.user_ratings) < 5: # we still need more ratings ask user for more
-                questions = [
-                    "Tell me more movies you liked!",
-                    "What other movies can you tell me?",
-                    "What other movies have you watched?",
-                    "Any other movies you've seen recently?",
-                    "What other movies do you have thoughts on?",
-                    "What else have you watched?",
-                    "Do you have any other favorites or least favorites?",
-                    "Let’s talk about another movie!"
+                return return_response(response)
+            elif len(potential_titles) > 1:
+                return return_response("I'm sorry, I found multiple movie titles in your input")
+            title = potential_titles[0]
+
+            # find the movie by title
+            movie_indices = self.find_movies_by_title(title)
+            if len(movie_indices) == 0:
+                return return_response("I'm sorry, I couldn't find any movies with the title {}".format(title))
+            elif len(movie_indices) > 1:
+                return return_response("I found multiple movies with the title {}, here are the first {}: {}\n Which one are you talking about?".format(title, min(5, len(movie_indices)), ", ".join([self.titles[i][0] for i in movie_indices[:5]])))
+            movie_index = movie_indices[0]
+
+            # extract sentiment
+            sentiment = self.extract_sentiment(self.preprocess(line))
+            if sentiment == 1:
+                self.user_ratings[movie_index] = 1
+                positive_responses = [
+                    "You liked {}!".format(self.titles[movie_index][0]),
+                    "So you liked {}!".format(self.titles[movie_index][0]),
+                    "You enjoyed {}!".format(self.titles[movie_index][0]),
+                    "Ah, I am glad you found {} good!".format(self.titles[movie_index][0]),
+                    "You loved {}!".format(self.titles[movie_index][0])
                 ]
-                response += " " + np.random.choice(questions)
+                response = np.random.choice(positive_responses)
+            elif sentiment == 0:
+                neutral_responses = [
+                    "You felt neutral about {}.".format(self.titles[movie_index][0]),
+                    "{} was just okay for you.".format(self.titles[movie_index][0]),
+                    "It seems {} didn’t leave a strong impression.".format(self.titles[movie_index][0]),
+                    "You're indifferent about {}.".format(self.titles[movie_index][0]),
+                    "{} was neither good nor bad for you.".format(self.titles[movie_index][0])
+                ]
+                response = np.random.choice(neutral_responses)
+
             else:
-                if len(self.recs) > 0: # if recs is already filled then last msg was asking if the user wants more recs
-                    yesses = ["yes", "yeah", "sure", "ok", "okay", "yep", "y", "yea", "yup", "of course", "please", "more", "another"]
-                    nos = ["no", "nope", "nah", "n", "not really", "not", "not now", "not yet", "not today", "not this time", "no thanks", "no thank you", "no more","im good", "i'm good"]
-                    # remove punctuation and lowercase the line
-                    line_clean = re.sub(r'[^\w\s]', '', line).lower()
-                    if any(yes in line_clean for yes in yesses):
-                        # recommend more
-                        pass  
-                    elif any(no in line_clean for no in nos):
-                        return self.goodbye()
-                        # finish
-                    else: # keep asking till the user responds
-                        return "I'm sorry, I didn't understand your response. Do you want more recommendations?"
-                else: # if recs is empty and we have 5 ratings that means we just got the fifth movie.
-                    self.recs = self.recommend(self.user_ratings, self.ratings)[::-1] # we reverse the list to get the highest rated movies first when popping
-                
-                # respond with another recommendation if user responded with yes or it's first time recommending
-                responses = [
-                    "Given what you said, I have some recommendations for you: ",
-                    "Based on your input, I have something for you to watch: ",
-                    "Let me reccomend this to you then: ",
-                    "Based on out conversation, I think you would like: ",
-                    ]
+                negative_responses = [
+                    "You didn’t like {}!".format(self.titles[movie_index][0]),
+                    "So {} wasn’t your favorite.".format(self.titles[movie_index][0]),
+                    "Oh, you disliked {}!".format(self.titles[movie_index][0]),
+                    "Not a fan of {}?".format(self.titles[movie_index][0]),
+                    "You didn’t enjoy {}.".format(self.titles[movie_index][0])
+                ]
+                self.user_ratings[movie_index] = -1
+                response = np.random.choice(negative_responses)
 
-                response += " " + np.random.choice(responses) + self.titles[self.recs.pop()][0]
-
-                follow_ups = [
-                    "Do you want more recommendations?",
-                    "Would you like more recommendations?",
-                    "Do you want another recommendation?",
-                    "Want another recommendation?",
+        if np.count_nonzero(self.user_ratings) < 5: # we still need more ratings ask user for more
+            questions = [
+                "Tell me more movies you liked!",
+                "What other movies can you tell me?",
+                "What other movies have you watched?",
+                "Any other movies you've seen recently?",
+                "What other movies do you have thoughts on?",
+                "What else have you watched?",
+                "Do you have any other favorites or least favorites?",
+                "Let’s talk about another movie!"
+            ]
+            response += " " + np.random.choice(questions)
+        else:
+            if len(self.recs) > 0: # if recs is already filled then last msg was asking if the user wants more recs
+                yesses = ["yes", "yeah", "sure", "ok", "okay", "yep", "y", "yea", "yup", "of course", "please", "more", "another"]
+                nos = ["no", "nope", "nah", "n", "not really", "not", "not now", "not yet", "not today", "not this time", "no thanks", "no thank you", "no more","im good", "i'm good"]
+                # remove punctuation and lowercase the line
+                line_clean = re.sub(r'[^\w\s]', '', line).lower()
+                if any(yes in line_clean for yes in yesses):
+                    # recommend more
+                    pass  
+                elif any(no in line_clean for no in nos):
+                    return return_response("Alright, let me know if you change your mind!")
+                    # finish
+                else: # keep asking till the user responds
+                    return return_response("I'm sorry, I didn't understand your response. Do you want more recommendations?")
+            else: # if recs is empty and we have 5 ratings that means we just got the fifth movie.
+                self.recs = self.recommend(self.user_ratings, self.ratings)[::-1] # we reverse the list to get the highest rated movies first when popping
+            
+            # respond with another recommendation if user responded with yes or it's first time recommending
+            responses = [
+                "Given what you said, I have some recommendations for you: ",
+                "Based on your input, I have something for you to watch: ",
+                "Let me reccomend this to you then: ",
+                "Based on out conversation, I think you would like: ",
                 ]
 
-                response += " " + np.random.choice(follow_ups)
+            response += " " + np.random.choice(responses) + self.titles[self.recs.pop()][0]
 
-                response = response.strip()
+            follow_ups = [
+                "Do you want more recommendations?",
+                "Would you like more recommendations?",
+                "Do you want another recommendation?",
+                "Want another recommendation?",
+            ]
+
+            response += " " + np.random.choice(follow_ups)
+
+            response = response.strip()
 
 
 
         ########################################################################
         #                          END OF YOUR CODE                            #
         ########################################################################
-        return response
+        return return_response(response)
 
     @staticmethod
     def preprocess(text):
@@ -350,7 +342,10 @@ class Chatbot:
                     or "English" not in response \
                     or not isinstance(response["English"], str):
                         raise ValueError("Invalid emotion response")
-                    title = response["English"]
+                    # check if there was a date in the original title
+                    if re.match(r".* \(\d+\)", title):
+                        title = response["English"] + " " + re.match(r".* (\(\d+\))", title).group(1)
+                    else: title = response["English"]
                     break
                 except:
                     pass

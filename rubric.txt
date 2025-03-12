@@ -15,7 +15,7 @@ FEATURE - [LLM PROGRAMMING] Find Foreign Movie Title: YES
 FEATURE - [LLM PROGRAMMING] Extracting Emotion from User Input: YES
 FEATURE - [LLM PROGRAMMING] Responding to Arbitrary User Input: YES
 FEATURE - [LLM PROGRAMMING] Responding Appropriately to User Emotion: YES
-FEATURE - [LLM PROGRAMMING] Chatbot Theme/Persona: NO
+FEATURE - [LLM PROGRAMMING] Chatbot Theme/Persona: YES
 Did not implement any of the above features: NO
 
 #########################################################################################
@@ -28,3 +28,6 @@ Both of us contributed equally! and yes we did cool stuff!
 # implementation!                                                                       #
 #########################################################################################
 (optional) If you have anything else you want to add, delete this and type it here!
+
+in llm_programming mode, some times persona makes it hard to check if the chatbot is working correctly or not and reiterating emotions correctly or mentioning the movie title explicitly.
+to disable persona by going to chatbot.py line 135 and set it to false.
